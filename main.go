@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,18 +11,14 @@ func main() {
 		log.Fatal("Error: Please provide a port number")
 	}
 	port := os.Args[1]
+	dbURL := os.Getenv("DB_URL")
 
-	fmt.Println("Service initialized: 0 wallets found, bank account is empty.")
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Welcome to the Stock Market Service!")
-	})
-
-	address := ":" + port
-	fmt.Printf("Server is starting on http://localhost%s\n", address)
-
-	err := http.ListenAndServe(address, nil)
-	if err != nil {
-		log.Fatal("Failed to start server: ", err)
+	if dbURL == "" {
+		dbURL = "postgres://user:password@localhost:5432/stock_market?sslmode=disable"
 	}
+
+	InitDB(dbURL)
+
+	log.Printf("Service initialized on port %s. Bank is empty.", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
