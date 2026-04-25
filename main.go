@@ -19,6 +19,8 @@ func main() {
 
 	InitDB(dbURL)
 
+	http.HandleFunc("POST /wallets/{wallet_id}/stocks/{stock_name}", TradeHandler)
+
 	log.Printf("Service initialized on port %s. Bank is empty.", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
