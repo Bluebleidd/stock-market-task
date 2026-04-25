@@ -1,0 +1,14 @@
+services:
+  app1:
+    build: .
+    command: ["${APP_PORT}"]
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    restart: always
+
+  app2:
+    build: .
+    command: ["8081"]
+    ports:
+      - "8081:8081"
+    restart: always
