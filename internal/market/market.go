@@ -1,12 +1,15 @@
-package main
+package market
 
 import (
 	"database/sql"
 	"errors"
+
+	"github.com/Bluebleidd/stock-market-task/internal/db"
+	"github.com/Bluebleidd/stock-market-task/internal/models"
 )
 
-func SetBankState(stocks []Stock) error {
-	tx, err := DB.Begin()
+func SetBankState(stocks []models.Stock) error {
+	tx, err := db.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -26,16 +29,16 @@ func SetBankState(stocks []Stock) error {
 	return tx.Commit()
 }
 
-func GetBankState() ([]Stock, error) {
-	rows, err := DB.Query("SELECT name, quantity FROM bank_stocks")
+func GetBankState() ([]models.Stock, error) {
+	rows, err := db.DB.Query("SELECT name, quantity FROM bank_stocks")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var stocks []Stock
+	var stocks []models.Stock
 	for rows.Next() {
-		var s Stock
+		var s models.Stock
 		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
 			return nil, err
 		}
@@ -43,13 +46,13 @@ func GetBankState() ([]Stock, error) {
 	}
 
 	if stocks == nil {
-		stocks = []Stock{}
+		stocks = []models.Stock{}
 	}
 	return stocks, nil
 }
 
 func BuyStock(walletID, stockName string) error {
-	tx, err := DB.Begin()
+	tx, err := db.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -87,7 +90,7 @@ func BuyStock(walletID, stockName string) error {
 }
 
 func SellStock(walletID, stockName string) error {
-	tx, err := DB.Begin()
+	tx, err := db.DB.Begin()
 	if err != nil {
 		return err
 	}

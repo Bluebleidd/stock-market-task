@@ -1,10 +1,14 @@
-package main
+package handlers
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/Bluebleidd/stock-market-task/internal/db"
+	"github.com/Bluebleidd/stock-market-task/internal/market"
+	"github.com/Bluebleidd/stock-market-task/internal/models"
 )
 
 type TradeRequest struct {
@@ -23,7 +27,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// return 404
 	var bankQty int
-	err := DB.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
+	err := db.DB.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Stock does not exist", http.StatusNotFound)
 		return
@@ -39,13 +43,13 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "No stock in the bank", http.StatusBadRequest)
 			return
 		}
-		err = BuyStock(walletID, stockName)
+		err = market.BuyStock(walletID, stockName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	case "sell":
-		err = SellStock(walletID, stockName)
+		err = market.SellStock(walletID, stockName)
 		if err != nil {
 			// return 400
 			if err.Error() == "stock not available in wallet" {
@@ -68,16 +72,16 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
 	walletID := r.PathValue("wallet_id")
 
-	rows, err := DB.Query("SELECT stock_name, quantity FROM wallet_stocks WHERE wallet_id = $1", walletID)
+	rows, err := db.DB.Query("SELECT stock_name, quantity FROM wallet_stocks WHERE wallet_id = $1", walletID)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var stocks []Stock
+	var stocks []models.Stock
 	for rows.Next() {
-		var s Stock
+		var s models.Stock
 		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
 			http.Error(w, "Error scanning data", http.StatusInternalServerError)
 			return
@@ -86,11 +90,11 @@ func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if stocks == nil {
-		stocks = []Stock{}
+		stocks = []models.Stock{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Wallet{
+	json.NewEncoder(w).Encode(models.Wallet{
 		ID:     walletID,
 		Stocks: stocks,
 	})
@@ -102,7 +106,7 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 	stockName := r.PathValue("stock_name")
 
 	var quantity int
-	err := DB.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2",
+	err := db.DB.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2",
 		walletID, stockName).Scan(&quantity)
 
 	if err == sql.ErrNoRows {
@@ -118,16 +122,16 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 
 // GET /stocks
 func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := DB.Query("SELECT name, quantity FROM bank_stocks")
+	rows, err := db.DB.Query("SELECT name, quantity FROM bank_stocks")
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var stocks []Stock
+	var stocks []models.Stock
 	for rows.Next() {
-		var s Stock
+		var s models.Stock
 		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
 			http.Error(w, "Error scanning data", http.StatusInternalServerError)
 			return
@@ -136,7 +140,7 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if stocks == nil {
-		stocks = []Stock{}
+		stocks = []models.Stock{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -145,14 +149,14 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 
 // POST /stocks
 func SetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	var stocks []Stock
+	var stocks []models.Stock
 
 	if err := json.NewDecoder(r.Body).Decode(&stocks); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err := SetBankState(stocks)
+	err := market.SetBankState(stocks)
 	if err != nil {
 		http.Error(w, "Failed to set bank state", http.StatusInternalServerError)
 		return
