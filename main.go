@@ -23,6 +23,9 @@ func main() {
 	http.HandleFunc("GET /wallets/{wallet_id}", GetWalletHandler)
 	http.HandleFunc("GET /wallets/{wallet_id}/stocks/{stock_name}", GetWalletStockHandler)
 
+	http.HandleFunc("GET /stocks", GetStocksHandler)
+	http.HandleFunc("POST /stocks", SetStocksHandler)
+
 	log.Printf("Service initialized on port %s. Bank is empty.", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
