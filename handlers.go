@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -31,7 +32,8 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Type == "buy" {
+	switch req.Type {
+	case "buy":
 		// Rule: If there is no stock in the bank buy should return 400
 		if bankQty <= 0 {
 			http.Error(w, "No stock in the bank", http.StatusBadRequest)
@@ -42,7 +44,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	} else if req.Type == "sell" {
+	case "sell":
 		err = SellStock(walletID, stockName)
 		if err != nil {
 			// Rule: if there is no stock in the wallet sell should return 400
@@ -53,11 +55,63 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	} else {
+	default:
 		http.Error(w, "Invalid type, must be buy or sell", http.StatusBadRequest)
 		return
 	}
 
 	// Rule: If the operation succeeds it should return 200
 	w.WriteHeader(http.StatusOK)
+}
+
+// GET /wallets/{wallet_id}
+func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
+	walletID := r.PathValue("wallet_id")
+
+	rows, err := DB.Query("SELECT stock_name, quantity FROM wallet_stocks WHERE wallet_id = $1", walletID)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var stocks []Stock
+	for rows.Next() {
+		var s Stock
+		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
+			http.Error(w, "Error scanning data", http.StatusInternalServerError)
+			return
+		}
+		stocks = append(stocks, s)
+	}
+
+	if stocks == nil {
+		stocks = []Stock{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Wallet{
+		ID:     walletID,
+		Stocks: stocks,
+	})
+}
+
+// GET /wallets/{wallet_id}/stocks/{stock_name}
+func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
+	walletID := r.PathValue("wallet_id")
+	stockName := r.PathValue("stock_name")
+
+	var quantity int
+	err := DB.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2",
+		walletID, stockName).Scan(&quantity)
+
+	if err == sql.ErrNoRows {
+		fmt.Fprint(w, "0")
+		return
+	} else if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", quantity)
 }
