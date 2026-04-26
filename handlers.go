@@ -21,7 +21,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Rule: if the stock doesnt exist this should return 404
+	// return 404
 	var bankQty int
 	err := DB.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
 	if err == sql.ErrNoRows {
@@ -34,7 +34,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch req.Type {
 	case "buy":
-		// Rule: If there is no stock in the bank buy should return 400
+		// return 400
 		if bankQty <= 0 {
 			http.Error(w, "No stock in the bank", http.StatusBadRequest)
 			return
@@ -47,7 +47,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 	case "sell":
 		err = SellStock(walletID, stockName)
 		if err != nil {
-			// Rule: if there is no stock in the wallet sell should return 400
+			// return 400
 			if err.Error() == "stock not available in wallet" {
 				http.Error(w, "No stock in wallet", http.StatusBadRequest)
 				return
@@ -60,7 +60,7 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Rule: If the operation succeeds it should return 200
+	// return 200
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -114,4 +114,49 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "%d", quantity)
+}
+
+// GET /stocks
+func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := DB.Query("SELECT name, quantity FROM bank_stocks")
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var stocks []Stock
+	for rows.Next() {
+		var s Stock
+		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
+			http.Error(w, "Error scanning data", http.StatusInternalServerError)
+			return
+		}
+		stocks = append(stocks, s)
+	}
+
+	if stocks == nil {
+		stocks = []Stock{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stocks)
+}
+
+// POST /stocks
+func SetStocksHandler(w http.ResponseWriter, r *http.Request) {
+	var stocks []Stock
+
+	if err := json.NewDecoder(r.Body).Decode(&stocks); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := SetBankState(stocks)
+	if err != nil {
+		http.Error(w, "Failed to set bank state", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
