@@ -5,7 +5,7 @@ COPY go.mod ./
 RUN go mod download
 
 COPY . .
-RUN go build -o stock-market .
+RUN go build -o stock-market ./cmd/server/
 
 FROM alpine:latest
 WORKDIR /root/
