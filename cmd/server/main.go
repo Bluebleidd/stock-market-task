@@ -29,6 +29,8 @@ func main() {
 	http.HandleFunc("GET /stocks", handlers.GetStocksHandler)
 	http.HandleFunc("POST /stocks", handlers.SetStocksHandler)
 
+	http.HandleFunc("GET /log", handlers.GetLogHandler)
+
 	log.Printf("Service initialized on port %s. Bank is empty.", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -138,3 +138,26 @@ func SellStock(walletID, stockName string) error {
 
 	return tx.Commit()
 }
+
+func GetAuditLog() ([]models.Log, error) {
+	rows, err := db.DB.Query("SELECT type, wallet_id, stock_name FROM audit_log")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var logs []models.Log
+	for rows.Next() {
+		var l models.Log
+		if err := rows.Scan(&l.Type, &l.WalletID, &l.StockName); err != nil {
+			return nil, err
+		}
+		logs = append(logs, l)
+	}
+
+	if logs == nil {
+		logs = []models.Log{}
+	}
+
+	return logs, nil
+}
