@@ -165,3 +165,20 @@ func SetStocksHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func GetLogHandler(w http.ResponseWriter, r *http.Request) {
+	logs, err := market.GetAuditLog()
+	if err != nil {
+		http.Error(w, "Failed to get audit log", http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		Logs []models.Log `json:"log"`
+	}{
+		Logs: logs,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
