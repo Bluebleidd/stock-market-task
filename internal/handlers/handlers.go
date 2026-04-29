@@ -141,7 +141,9 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stocks)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"stocks": stocks,
+	})
 }
 
 // POST /stocks
