@@ -31,6 +31,8 @@ func main() {
 
 	http.HandleFunc("GET /log", handlers.GetLogHandler)
 
+	http.HandleFunc("POST /chaos", handlers.ChaosHandler)
+
 	log.Printf("Service initialized on port %s. Bank is empty.", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
