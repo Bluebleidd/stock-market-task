@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,7 @@ type TradeRequest struct {
 	Type string `json:"type"`
 }
 
+// POST /wallets/{wallet_id}/stocks/{stock_name}
 func TradeHandler(w http.ResponseWriter, r *http.Request) {
 	walletID := r.PathValue("wallet_id")
 	stockName := r.PathValue("stock_name")
@@ -25,46 +27,42 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// return 404
-	var bankQty int
-	err := db.DB.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows {
-		http.Error(w, "Stock does not exist", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
 	switch req.Type {
 	case "buy":
-		// return 400
-		if bankQty <= 0 {
-			http.Error(w, "No stock in the bank", http.StatusBadRequest)
-			return
-		}
-		err = market.BuyStock(walletID, stockName)
+		err := market.BuyStock(walletID, stockName)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	case "sell":
-		err = market.SellStock(walletID, stockName)
-		if err != nil {
-			// return 400
-			if err.Error() == "stock not available in wallet" {
-				http.Error(w, "No stock in wallet", http.StatusBadRequest)
+			if errors.Is(err, market.ErrStockNotFound) {
+				http.Error(w, "Stock not found", http.StatusNotFound)
+				return
+			}
+			if errors.Is(err, market.ErrNotEnoughInBank) {
+				http.Error(w, "Not enough stock in the bank", http.StatusBadRequest)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+	case "sell":
+		err := market.SellStock(walletID, stockName)
+		if err != nil {
+			if errors.Is(err, market.ErrStockNotFound) {
+				http.Error(w, "Stock not found", http.StatusNotFound)
+				return
+			}
+			if errors.Is(err, market.ErrNotEnoughInWallet) {
+				http.Error(w, "Not enough stock in wallet", http.StatusBadRequest)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	default:
 		http.Error(w, "Invalid type, must be buy or sell", http.StatusBadRequest)
 		return
 	}
 
-	// return 200
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -116,7 +114,6 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-
 	fmt.Fprintf(w, "%d", quantity)
 }
 
