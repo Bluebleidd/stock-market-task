@@ -1,15 +1,18 @@
+<div align="center">
+
 # Stock Market Task
+
+![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
+![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Nginx](https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+
+</div>
 
 ## Description
 This project is a simplified stock market simulation. It allows users to manage wallets and trade stocks with a central Bank. The system tracks stock quantities in both wallets and the Bank, and it records every successful action in an Audit Log.
 
 The application is built to be highly available. It uses an Nginx load balancer to ensure that if one instance of the app is closed (during Chaos Mode), the service stays online and continues to handle requests.
-
-## Technologies
-- **Go**
-- **PostgreSQL**
-- **Nginx**
-- **Docker**
 
 ## Usage
 To run this project, you must have Docker installed on your system. You can start the entire environment using the provided scripts::
