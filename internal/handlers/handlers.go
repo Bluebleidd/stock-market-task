@@ -146,14 +146,16 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 
 // POST /stocks
 func SetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	var stocks []models.Stock
+	var request struct {
+		Stocks []models.Stock `json:"stocks"`
+	}
 
-	if err := json.NewDecoder(r.Body).Decode(&stocks); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err := market.SetBankState(stocks)
+	err := market.SetBankState(request.Stocks)
 	if err != nil {
 		http.Error(w, "Failed to set bank state", http.StatusInternalServerError)
 		return
