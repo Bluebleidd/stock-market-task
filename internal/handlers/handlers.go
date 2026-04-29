@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/Bluebleidd/stock-market-task/internal/db"
 	"github.com/Bluebleidd/stock-market-task/internal/market"
@@ -166,6 +168,7 @@ func SetStocksHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// GET /log
 func GetLogHandler(w http.ResponseWriter, r *http.Request) {
 	logs, err := market.GetAuditLog()
 	if err != nil {
@@ -181,4 +184,15 @@ func GetLogHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// POST /chaos
+func ChaosHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("Simulating chaos: killing an instance")
+		os.Exit(1)
+	}()
 }
