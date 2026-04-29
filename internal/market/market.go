@@ -8,6 +8,10 @@ import (
 	"github.com/Bluebleidd/stock-market-task/internal/models"
 )
 
+var ErrStockNotFound = errors.New("stock not found")
+var ErrNotEnoughInBank = errors.New("not enough stock available")
+var ErrNotEnoughInWallet = errors.New("not enough stock in wallet")
+
 func SetBankState(stocks []models.Stock) error {
 	tx, err := db.DB.Begin()
 	if err != nil {
@@ -60,10 +64,14 @@ func BuyStock(walletID, stockName string) error {
 
 	var bankQty int
 	err = tx.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows || bankQty <= 0 {
-		return errors.New("stock not available in bank")
+	if err == sql.ErrNoRows {
+		return ErrStockNotFound
 	} else if err != nil {
 		return err
+	}
+
+	if bankQty <= 0 {
+		return ErrNotEnoughInBank
 	}
 
 	_, err = tx.Exec("UPDATE bank_stocks SET quantity = quantity - 1 WHERE name = $1", stockName)
@@ -98,10 +106,14 @@ func SellStock(walletID, stockName string) error {
 
 	var walletQty int
 	err = tx.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2", walletID, stockName).Scan(&walletQty)
-	if err == sql.ErrNoRows || walletQty <= 0 {
-		return errors.New("stock not available in wallet")
+	if err == sql.ErrNoRows {
+		return ErrStockNotFound
 	} else if err != nil {
 		return err
+	}
+
+	if walletQty <= 0 {
+		return ErrNotEnoughInWallet
 	}
 
 	_, err = tx.Exec("UPDATE wallet_stocks SET quantity = quantity - 1 WHERE wallet_id = $1 AND stock_name = $2", walletID, stockName)
