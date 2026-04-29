@@ -63,7 +63,7 @@ func BuyStock(walletID, stockName string) error {
 	defer tx.Rollback()
 
 	var bankQty int
-	err = tx.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1", stockName).Scan(&bankQty)
+	err = tx.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1 FOR UPDATE", stockName).Scan(&bankQty)
 	if err == sql.ErrNoRows {
 		return ErrStockNotFound
 	} else if err != nil {
@@ -105,7 +105,7 @@ func SellStock(walletID, stockName string) error {
 	defer tx.Rollback()
 
 	var walletQty int
-	err = tx.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2", walletID, stockName).Scan(&walletQty)
+	err = tx.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2 FOR UPDATE", walletID, stockName).Scan(&walletQty)
 	if err == sql.ErrNoRows {
 		return ErrStockNotFound
 	} else if err != nil {
@@ -140,7 +140,7 @@ func SellStock(walletID, stockName string) error {
 }
 
 func GetAuditLog() ([]models.Log, error) {
-	rows, err := db.DB.Query("SELECT type, wallet_id, stock_name FROM audit_log")
+	rows, err := db.DB.Query("SELECT type, wallet_id, stock_name FROM audit_log ORDER BY created_at ASC LIMIT 10000")
 	if err != nil {
 		return nil, err
 	}
