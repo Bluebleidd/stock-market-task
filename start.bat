@@ -7,4 +7,4 @@ if "%~1"=="" (
 
 set APP_PORT=%~1
 
-docker compose up --build
+docker compose up --build --remove-orphans
