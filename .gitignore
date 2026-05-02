@@ -10,3 +10,5 @@ desktop.ini
 
 node_modules/
 stock-market-task.exe
+create_issues.sh
+.claude
