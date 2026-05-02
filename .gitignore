@@ -7,3 +7,6 @@ desktop.ini
 .vscode/
 .idea/
 *.log
+
+node_modules/
+stock-market-task.exe
