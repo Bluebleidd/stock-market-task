@@ -19,13 +19,13 @@ func SetBankState(stocks []models.Stock) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("DELETE FROM bank_stocks")
+	_, err = tx.Exec(`DELETE FROM bank_stocks`)
 	if err != nil {
 		return err
 	}
 
 	for _, s := range stocks {
-		_, err = tx.Exec("INSERT INTO bank_stocks (name, quantity) VALUES ($1, $2)", s.Name, s.Quantity)
+		_, err = tx.Exec(`INSERT INTO bank_stocks (name, quantity) VALUES ($1, $2)`, s.Name, s.Quantity)
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,11 @@ func SetBankState(stocks []models.Stock) error {
 }
 
 func GetBankState() ([]models.Stock, error) {
-	rows, err := db.DB.Query("SELECT name, quantity FROM bank_stocks")
+	query := `
+		SELECT name, quantity
+		FROM bank_stocks
+	`
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +67,13 @@ func BuyStock(walletID, stockName string) error {
 	defer tx.Rollback()
 
 	var bankQty int
-	err = tx.QueryRow("SELECT quantity FROM bank_stocks WHERE name = $1 FOR UPDATE", stockName).Scan(&bankQty)
+	query := `
+		SELECT quantity
+		FROM bank_stocks
+		WHERE name = $1
+		FOR UPDATE
+	`
+	err = tx.QueryRow(query, stockName).Scan(&bankQty)
 	if err == sql.ErrNoRows {
 		return ErrStockNotFound
 	} else if err != nil {
@@ -74,22 +84,32 @@ func BuyStock(walletID, stockName string) error {
 		return ErrNotEnoughInBank
 	}
 
-	_, err = tx.Exec("UPDATE bank_stocks SET quantity = quantity - 1 WHERE name = $1", stockName)
+	query = `
+		UPDATE bank_stocks
+		SET quantity = quantity - 1
+		WHERE name = $1
+	`
+	_, err = tx.Exec(query, stockName)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`
+	query = `
 		INSERT INTO wallet_stocks (wallet_id, stock_name, quantity)
 		VALUES ($1, $2, 1)
 		ON CONFLICT (wallet_id, stock_name)
 		DO UPDATE SET quantity = wallet_stocks.quantity + 1
-	`, walletID, stockName)
+	`
+	_, err = tx.Exec(query, walletID, stockName)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT INTO audit_log (type, wallet_id, stock_name) VALUES ('buy', $1, $2)`, walletID, stockName)
+	query = `
+		INSERT INTO audit_log (type, wallet_id, stock_name)
+		VALUES ('buy', $1, $2)
+	`
+	_, err = tx.Exec(query, walletID, stockName)
 	if err != nil {
 		return err
 	}
@@ -105,7 +125,14 @@ func SellStock(walletID, stockName string) error {
 	defer tx.Rollback()
 
 	var walletQty int
-	err = tx.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2 FOR UPDATE", walletID, stockName).Scan(&walletQty)
+	query := `
+		SELECT quantity
+		FROM wallet_stocks
+		WHERE wallet_id = $1
+			AND stock_name = $2
+		FOR UPDATE
+	`
+	err = tx.QueryRow(query, walletID, stockName).Scan(&walletQty)
 	if err == sql.ErrNoRows {
 		return ErrStockNotFound
 	} else if err != nil {
@@ -116,22 +143,33 @@ func SellStock(walletID, stockName string) error {
 		return ErrNotEnoughInWallet
 	}
 
-	_, err = tx.Exec("UPDATE wallet_stocks SET quantity = quantity - 1 WHERE wallet_id = $1 AND stock_name = $2", walletID, stockName)
+	query = `
+		UPDATE wallet_stocks
+		SET quantity = quantity - 1
+		WHERE wallet_id = $1
+			AND stock_name = $2
+	`
+	_, err = tx.Exec(query, walletID, stockName)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`
+	query = `
 		INSERT INTO bank_stocks (name, quantity)
 		VALUES ($1, 1)
 		ON CONFLICT (name)
 		DO UPDATE SET quantity = bank_stocks.quantity + 1
-	`, stockName)
+	`
+	_, err = tx.Exec(query, stockName)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT INTO audit_log (type, wallet_id, stock_name) VALUES ('sell', $1, $2)`, walletID, stockName)
+	query = `
+		INSERT INTO audit_log (type, wallet_id, stock_name)
+		VALUES ('sell', $1, $2)
+	`
+	_, err = tx.Exec(query, walletID, stockName)
 	if err != nil {
 		return err
 	}
@@ -140,7 +178,13 @@ func SellStock(walletID, stockName string) error {
 }
 
 func GetAuditLog() ([]models.Log, error) {
-	rows, err := db.DB.Query("SELECT type, wallet_id, stock_name FROM audit_log ORDER BY created_at ASC LIMIT 10000")
+	query := `
+		SELECT type, wallet_id, stock_name
+		FROM audit_log
+		ORDER BY created_at ASC
+		LIMIT 10000
+	`
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
