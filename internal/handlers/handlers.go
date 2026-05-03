@@ -135,33 +135,10 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 
 // GET /stocks
 func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	query := `
-		SELECT name, quantity
-		FROM bank_stocks
-	`
-	rows, err := db.DB.Query(query)
+	stocks, err := market.GetBankState()
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	var stocks []models.Stock
-	for rows.Next() {
-		var s models.Stock
-		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
-			http.Error(w, "Error scanning data", http.StatusInternalServerError)
-			return
-		}
-		stocks = append(stocks, s)
-	}
-	if err := rows.Err(); err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	if stocks == nil {
-		stocks = []models.Stock{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
