@@ -122,15 +122,15 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 	`
 	var quantity int
 	err := db.DB.QueryRow(query, walletID, stockName).Scan(&quantity)
-
-	if err == sql.ErrNoRows {
-		fmt.Fprint(w, "0")
-		return
-	} else if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "%d", quantity)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(quantity); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }
 
 // GET /stocks
