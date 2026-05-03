@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +16,10 @@ import (
 
 type TradeRequest struct {
 	Type string `json:"type"`
+}
+
+type stocksResponse struct {
+	Stocks []models.Stock `json:"stocks"`
 }
 
 // POST /wallets/{wallet_id}/stocks/{stock_name}
@@ -122,50 +125,27 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 	`
 	var quantity int
 	err := db.DB.QueryRow(query, walletID, stockName).Scan(&quantity)
-
-	if err == sql.ErrNoRows {
-		fmt.Fprint(w, "0")
-		return
-	} else if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "%d", quantity)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(quantity); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }
 
 // GET /stocks
 func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	query := `
-		SELECT name, quantity
-		FROM bank_stocks
-	`
-	rows, err := db.DB.Query(query)
+	stocks, err := market.GetBankState()
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
-
-	var stocks []models.Stock
-	for rows.Next() {
-		var s models.Stock
-		if err := rows.Scan(&s.Name, &s.Quantity); err != nil {
-			http.Error(w, "Error scanning data", http.StatusInternalServerError)
-			return
-		}
-		stocks = append(stocks, s)
-	}
-	if err := rows.Err(); err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	if stocks == nil {
-		stocks = []models.Stock{}
-	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{"stocks": stocks}); err != nil {
+	if err := json.NewEncoder(w).Encode(stocksResponse{Stocks: stocks}); err != nil {
 		log.Printf("encode response: %v", err)
 	}
 }
@@ -216,7 +196,7 @@ func ChaosHandler(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		fmt.Println("Simulating chaos: killing an instance")
+		log.Println("simulating chaos: killing instance")
 		os.Exit(1)
 	}()
 }
