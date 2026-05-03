@@ -17,7 +17,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 
 	if dbURL == "" {
-		dbURL = "postgres://user:password@localhost:5432/stock_market?sslmode=disable"
+		dbURL = "postgres://user:password@localhost:5432/stock_market_db?sslmode=disable"
 	}
 
 	db.InitDB(dbURL)
