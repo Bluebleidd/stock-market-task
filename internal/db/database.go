@@ -15,6 +15,9 @@ func InitDB(url string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err = DB.Ping(); err != nil {
+		log.Fatalf("cannot connect to DB: %v", err)
+	}
 
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS bank_stocks (
