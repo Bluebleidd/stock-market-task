@@ -77,7 +77,7 @@ func BuyStock(walletID, stockName string) error {
 		FOR UPDATE
 	`
 	err = tx.QueryRow(query, stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrStockNotFound
 	} else if err != nil {
 		return err
@@ -135,7 +135,7 @@ func SellStock(walletID, stockName string) error {
 		WHERE name = $1
 	`
 	err = tx.QueryRow(query, stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrStockNotFound
 	} else if err != nil {
 		return err
@@ -151,7 +151,7 @@ func SellStock(walletID, stockName string) error {
 		FOR UPDATE
 	`
 	err = tx.QueryRow(query, walletID, stockName).Scan(&walletQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotEnoughInWallet
 	} else if err != nil {
 		return err
