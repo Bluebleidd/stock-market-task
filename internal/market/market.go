@@ -199,7 +199,7 @@ func GetAuditLog() ([]models.Log, error) {
 	query := `
 		SELECT type, wallet_id, stock_name
 		FROM audit_log
-		ORDER BY created_at ASC
+		ORDER BY id ASC
 		LIMIT 10000
 	`
 	rows, err := db.DB.Query(query)
