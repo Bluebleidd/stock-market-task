@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -93,16 +94,19 @@ func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		stocks = append(stocks, s)
 	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 
 	if stocks == nil {
 		stocks = []models.Stock{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(models.Wallet{
-		ID:     walletID,
-		Stocks: stocks,
-	})
+	if err := json.NewEncoder(w).Encode(models.Wallet{ID: walletID, Stocks: stocks}); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }
 
 // GET /wallets/{wallet_id}/stocks/{stock_name}
@@ -151,15 +155,19 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		stocks = append(stocks, s)
 	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 
 	if stocks == nil {
 		stocks = []models.Stock{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"stocks": stocks,
-	})
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{"stocks": stocks}); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }
 
 // POST /stocks
@@ -197,7 +205,9 @@ func GetLogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }
 
 // POST /chaos

@@ -52,6 +52,9 @@ func GetBankState() ([]models.Stock, error) {
 		}
 		stocks = append(stocks, s)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	if stocks == nil {
 		stocks = []models.Stock{}
@@ -74,7 +77,7 @@ func BuyStock(walletID, stockName string) error {
 		FOR UPDATE
 	`
 	err = tx.QueryRow(query, stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrStockNotFound
 	} else if err != nil {
 		return err
@@ -132,7 +135,7 @@ func SellStock(walletID, stockName string) error {
 		WHERE name = $1
 	`
 	err = tx.QueryRow(query, stockName).Scan(&bankQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrStockNotFound
 	} else if err != nil {
 		return err
@@ -148,7 +151,7 @@ func SellStock(walletID, stockName string) error {
 		FOR UPDATE
 	`
 	err = tx.QueryRow(query, walletID, stockName).Scan(&walletQty)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotEnoughInWallet
 	} else if err != nil {
 		return err
@@ -212,6 +215,9 @@ func GetAuditLog() ([]models.Log, error) {
 			return nil, err
 		}
 		logs = append(logs, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	if logs == nil {
