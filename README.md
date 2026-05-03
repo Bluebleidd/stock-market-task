@@ -25,6 +25,10 @@ To run this project, you must have Docker installed on your system. You can star
 
 The application will be available at `localhost:<PORT>`.
 
+## Running tests
+Requires Docker running.
+    go test ./... -v -count=1 -timeout 300s
+
 ## Main Endpoints
 - POST /stocks: Set the initial number of stocks in the Bank.
 - GET /stocks: See the current state of the Bank.
