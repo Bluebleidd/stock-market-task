@@ -30,5 +30,6 @@ The application will be available at `localhost:<PORT>`.
 - GET /stocks: See the current state of the Bank.
 - POST /wallets/{wallet_id}/stocks/{stock_name}: Buy or sell a single stock.
 - GET /wallets/{wallet_id}: Check all stocks owned by a specific wallet.
+- GET /wallets/{wallet_id}/stocks/{stock_name}: Check the quantity of a specific stock in a wallet.
 - GET /log: View the history of all successful operations (sorted by time).
 - POST /chaos: Simulate a failure by killing the application instance that handles the request.
