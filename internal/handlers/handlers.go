@@ -18,6 +18,10 @@ type TradeRequest struct {
 	Type string `json:"type"`
 }
 
+type stocksResponse struct {
+	Stocks []models.Stock `json:"stocks"`
+}
+
 // POST /wallets/{wallet_id}/stocks/{stock_name}
 func TradeHandler(w http.ResponseWriter, r *http.Request) {
 	walletID := r.PathValue("wallet_id")
@@ -141,7 +145,7 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{"stocks": stocks}); err != nil {
+	if err := json.NewEncoder(w).Encode(stocksResponse{Stocks: stocks}); err != nil {
 		log.Printf("encode response: %v", err)
 	}
 }
