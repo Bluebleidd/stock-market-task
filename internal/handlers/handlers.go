@@ -72,7 +72,12 @@ func TradeHandler(w http.ResponseWriter, r *http.Request) {
 func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
 	walletID := r.PathValue("wallet_id")
 
-	rows, err := db.DB.Query("SELECT stock_name, quantity FROM wallet_stocks WHERE wallet_id = $1", walletID)
+	query := `
+		SELECT stock_name, quantity
+		FROM wallet_stocks
+		WHERE wallet_id = $1
+	`
+	rows, err := db.DB.Query(query, walletID)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
@@ -105,9 +110,14 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 	walletID := r.PathValue("wallet_id")
 	stockName := r.PathValue("stock_name")
 
+	query := `
+		SELECT quantity
+		FROM wallet_stocks
+		WHERE wallet_id = $1
+			AND stock_name = $2
+	`
 	var quantity int
-	err := db.DB.QueryRow("SELECT quantity FROM wallet_stocks WHERE wallet_id = $1 AND stock_name = $2",
-		walletID, stockName).Scan(&quantity)
+	err := db.DB.QueryRow(query, walletID, stockName).Scan(&quantity)
 
 	if err == sql.ErrNoRows {
 		fmt.Fprint(w, "0")
@@ -121,7 +131,11 @@ func GetWalletStockHandler(w http.ResponseWriter, r *http.Request) {
 
 // GET /stocks
 func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.DB.Query("SELECT name, quantity FROM bank_stocks")
+	query := `
+		SELECT name, quantity
+		FROM bank_stocks
+	`
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
