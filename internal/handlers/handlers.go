@@ -94,6 +94,10 @@ func GetWalletHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		stocks = append(stocks, s)
 	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 
 	if stocks == nil {
 		stocks = []models.Stock{}
@@ -150,6 +154,10 @@ func GetStocksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		stocks = append(stocks, s)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
 	}
 
 	if stocks == nil {

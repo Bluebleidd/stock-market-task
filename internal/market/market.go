@@ -52,6 +52,9 @@ func GetBankState() ([]models.Stock, error) {
 		}
 		stocks = append(stocks, s)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	if stocks == nil {
 		stocks = []models.Stock{}
@@ -212,6 +215,9 @@ func GetAuditLog() ([]models.Log, error) {
 			return nil, err
 		}
 		logs = append(logs, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	if logs == nil {
