@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -18,6 +19,10 @@ func InitDB(url string) {
 	if err = DB.Ping(); err != nil {
 		log.Fatalf("cannot connect to DB: %v", err)
 	}
+
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(10)
+	DB.SetConnMaxLifetime(5 * time.Minute)
 
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS bank_stocks (
