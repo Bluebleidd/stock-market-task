@@ -124,8 +124,23 @@ func SellStock(walletID, stockName string) error {
 	}
 	defer tx.Rollback()
 
-	var walletQty int
+	// Confirm the stock exists in the system at all → 404 if unknown.
+	var bankQty int
 	query := `
+		SELECT quantity
+		FROM bank_stocks
+		WHERE name = $1
+	`
+	err = tx.QueryRow(query, stockName).Scan(&bankQty)
+	if err == sql.ErrNoRows {
+		return ErrStockNotFound
+	} else if err != nil {
+		return err
+	}
+
+	// Confirm the wallet actually holds this stock → 400 if absent or zero.
+	var walletQty int
+	query = `
 		SELECT quantity
 		FROM wallet_stocks
 		WHERE wallet_id = $1
@@ -134,7 +149,7 @@ func SellStock(walletID, stockName string) error {
 	`
 	err = tx.QueryRow(query, walletID, stockName).Scan(&walletQty)
 	if err == sql.ErrNoRows {
-		return ErrStockNotFound
+		return ErrNotEnoughInWallet
 	} else if err != nil {
 		return err
 	}
