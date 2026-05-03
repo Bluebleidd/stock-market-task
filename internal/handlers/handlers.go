@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -193,7 +192,7 @@ func ChaosHandler(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		fmt.Println("Simulating chaos: killing an instance")
+		log.Println("simulating chaos: killing instance")
 		os.Exit(1)
 	}()
 }
